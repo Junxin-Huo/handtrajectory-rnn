@@ -1,1 +1,1 @@
-A file would be created in "/train" here when run "test.py". You can use "tensorboard --logdir=." to see the changes of learning rate and loss as well as the whole net graph.
+A file would be created in "/train" here when run "../test.py". You can use "tensorboard --logdir=." to see the changes of learning rate and loss as well as the whole net graph.
