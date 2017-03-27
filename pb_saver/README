@@ -1,0 +1,1 @@
+Freeze all the parameters from rnn net to a .pb file. This formulation's aim is to run the rnn net on android platform.
