@@ -2,8 +2,8 @@ import numpy as np
 import os
 import random
 
-FRAME_COUNT = 20
-VAR_LABEL = 4
+FRAME_COUNT = 10
+VAR_LABEL = 3
 CAMERA_RESOLUTION = 480
 
 def loadDataLabel(dir_name, shuffle=False, various=False):
@@ -14,6 +14,8 @@ def loadDataLabel(dir_name, shuffle=False, various=False):
     datas = []
     labels = []
     for i in range(len_dir):
+        if os.path.isdir(dir_name + '/' + dir[i]):
+            continue
         flag = False
         if dir[i] == 'hjx.txt' or dir[i] == 'yjl.txt' or dir[i] == 'mml.txt':
             flag = True
@@ -154,6 +156,8 @@ def loadDataLabelRealtime(dir_name, shuffle=False, various=False):
     datas = []
     labels = []
     for i in range(len_dir):
+        if os.path.isdir(dir_name + '/' + dir[i]):
+            continue
         flag = False
         if dir[i] == 'hjx.txt' or dir[i] == 'yjl.txt' or dir[i] == 'mml.txt':
             flag = True
@@ -243,3 +247,56 @@ def loadDataLabelRealtime(dir_name, shuffle=False, various=False):
         datas = xx
         labels = yy
     return datas, labels
+
+
+def loadDataLabelSequence(dir_name, batch_size):
+    dir_name = dir_name + '/sequence'
+    assert os.path.isdir(dir_name), "dir_name is not dir"
+    dir = os.listdir(dir_name)
+    dir.sort()
+    len_dir = len(dir)
+    datas = []
+    labels = []
+    for i in range(len_dir):
+        if os.path.isdir(dir_name + '/' + dir[i]):
+            continue
+        f = open(dir_name + '/' + dir[i], "r")
+        lines = f.readlines()
+        for line in lines:
+            words = line.split(' ')
+            len_frame = (len(words) - 2) / 4
+
+            split_words = np.asarray(words[1:len(words) - 1], dtype=np.float)
+            split_words = np.reshape(split_words, [-1, 4])
+            temp0, temp1, temp2, temp3 = np.split(split_words.T, 4)
+
+            point = np.zeros((len_frame, 2), dtype=np.float)
+            for j in range(len_frame):
+                point[j, 0] = temp2[0, j]
+                point[j, 1] = temp3[0, j]
+
+            for k in range(len_frame - 1):
+                x = np.zeros([2], dtype=np.float)
+                x[0] = (point[k + 1, 0] - point[k, 0]) / CAMERA_RESOLUTION
+                x[1] = (point[k + 1, 1] - point[k, 1]) / CAMERA_RESOLUTION
+                if temp1[0, k + 1] == 255:
+                    y = VAR_LABEL
+                else:
+                    y = temp1[0, k + 1]
+
+                datas.append(x)
+                labels.append(y)
+
+        f.close()
+
+    data_len = len(labels)
+    batch_len = data_len // batch_size
+    epoch_size = batch_len // FRAME_COUNT
+    datas = np.asarray(datas, dtype=np.float32)
+    labels = np.asarray(labels, dtype=np.float32)
+
+    _datas = np.reshape(datas[0: FRAME_COUNT * epoch_size * batch_size, ...], [batch_size, epoch_size, FRAME_COUNT, 2])
+    _labels = np.reshape(labels[0: FRAME_COUNT * epoch_size * batch_size], [batch_size, epoch_size, FRAME_COUNT])
+
+
+    return _datas, _labels

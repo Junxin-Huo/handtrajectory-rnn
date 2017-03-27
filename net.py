@@ -2,9 +2,9 @@ import tensorflow as tf
 import tensorflow.contrib as con
 from loader import VAR_LABEL, FRAME_COUNT
 
-HIDDEN_SIZE = 16
-NUM_LAYERS = 1
-max_grad_norm = 1
+HIDDEN_SIZE = 8
+NUM_LAYERS = 4
+max_grad_norm = 2
 
 
 
@@ -27,8 +27,6 @@ def inference(data, prob, BATCH_SIZE):
                 (cell_output, state) = cell(data[:, time_step, :], state)
                 outputs.append(cell_output)
 
-    # with tf.variable_scope('state'):
-    #     _final_state = tf.multiply(state, 1, name='final_state')
 
     with tf.variable_scope("softmax"):
         output = tf.reshape(tf.concat(outputs, 1), [-1, HIDDEN_SIZE])
@@ -40,19 +38,32 @@ def inference(data, prob, BATCH_SIZE):
                                 name='softmax_b')
         logits = tf.add(tf.matmul(output, softmax_w), softmax_b, name='logits')
 
+
+    with tf.variable_scope("output"):
+        argmax = tf.nn.softmax(logits, name='argmax')
+        state_0_c = tf.multiply(state[0].c, 1, name='state_0_c')
+        state_0_h = tf.multiply(state[0].h, 1, name='state_0_h')
+        state_1_c = tf.multiply(state[1].c, 1, name='state_1_c')
+        state_1_h = tf.multiply(state[1].h, 1, name='state_1_h')
+        state_2_c = tf.multiply(state[2].c, 1, name='state_2_c')
+        state_2_h = tf.multiply(state[2].h, 1, name='state_2_h')
+        state_3_c = tf.multiply(state[3].c, 1, name='state_3_c')
+        state_3_h = tf.multiply(state[3].h, 1, name='state_3_h')
+
+        # state_c = tf.Variable(tf.constant(0.0, shape=[NUM_LAYERS, HIDDEN_SIZE]),
+        #                       trainable=False, name="state_c",
+        #                       dtype=tf.float32)
+        # for i in range(NUM_LAYERS):
+        #     state_c[i] = tf.multiply(state[i].c, 1, name='state_c')
+
     return logits, _initial_state, state
 
 
 def total_loss(logits, labels, batch_size):
-    # frame_count = int(labels.shape[1])
-    a = tf.zeros([batch_size, FRAME_COUNT / 2])
-    b = tf.ones([batch_size, FRAME_COUNT - FRAME_COUNT / 2])
-    weights = tf.concat([a, b], 1)
-    weights2 = [tf.reshape(weights, [-1])]
     loss = con.legacy_seq2seq.sequence_loss_by_example(
         [logits],
         [tf.reshape(labels, [-1])],
-        weights2)
+        [tf.ones([batch_size * FRAME_COUNT])])
     loss_ave = tf.reduce_sum(loss) / batch_size
     return loss_ave
 
