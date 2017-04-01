@@ -5,7 +5,6 @@ import tensorflow as tf
 from net import inference
 from loader import loadDataLabelSequence, FRAME_COUNT
 
-
 BATCH_SIZE = 1
 
 DATADIR = 'dataset_test'

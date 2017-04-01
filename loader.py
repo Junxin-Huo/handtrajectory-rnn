@@ -249,7 +249,7 @@ def loadDataLabelRealtime(dir_name, shuffle=False, various=False):
     return datas, labels
 
 
-def loadDataLabelSequence(dir_name, batch_size):
+def loadDataLabelSequence(dir_name, batch_size, delay=0):
     dir_name = dir_name + '/sequence'
     assert os.path.isdir(dir_name), "dir_name is not dir"
     dir = os.listdir(dir_name)
@@ -279,10 +279,13 @@ def loadDataLabelSequence(dir_name, batch_size):
                 x = np.zeros([2], dtype=np.float)
                 x[0] = (point[k + 1, 0] - point[k, 0]) / CAMERA_RESOLUTION
                 x[1] = (point[k + 1, 1] - point[k, 1]) / CAMERA_RESOLUTION
-                if temp1[0, k + 1] == 255:
+                k_delay = k - delay
+                if k_delay < 0:
+                    y = VAR_LABEL
+                elif temp1[0, k_delay + 1] == 255:
                     y = VAR_LABEL
                 else:
-                    y = temp1[0, k + 1]
+                    y = temp1[0, k_delay + 1]
 
                 datas.append(x)
                 labels.append(y)
